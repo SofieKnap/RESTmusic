@@ -3,7 +3,7 @@
     public interface ICollectionRepository
     {
         Collection AddCollection(Collection collection);
-        IEnumerable<Collection> GetAllCollections();
+        IEnumerable<Collection> GetAllCollections(string? title=null, string? artist=null);
 
     }
 }
