@@ -1,4 +1,6 @@
 using RESTmusic.Models;
+using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,31 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ICollectionRepository, CollectionRepositoryList>();
+
+const string AllowAllCORSpolicy = "AllowAll";
+const string AllowLocalCORSpolicy = "AllowLocal";
+
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(AllowAllCORSpolicy,
+
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+
+    options.AddPolicy(AllowLocalCORSpolicy,
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
 
 var app = builder.Build();
 
@@ -24,4 +51,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.Run(); 

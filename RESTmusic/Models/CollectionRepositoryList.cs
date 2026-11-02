@@ -1,9 +1,9 @@
 ﻿namespace RESTmusic.Models
 {
-    public class CollectionRepositoryList
+    public class CollectionRepositoryList : ICollectionRepository
     {
         private readonly List<Collection> _collections = new List<Collection>();
-
+        
         public CollectionRepositoryList()
         {
             AddCollection(new Collection { Title = "lowkey", Artist = "NIKI", Duration = 185, PublicationYear = 2019 });
@@ -18,9 +18,21 @@
             return collection;
         }
 
-        public IEnumerable<Collection> GetAllCollections()
+        public IEnumerable<Collection> GetAllCollections(string? title = null, string? artist = null)
         {
-            return _collections.ToList();
+            IEnumerable<Collection> result = _collections;
+            //filtrer by title 
+            var collections = _collections.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                result = result.Where(c => c.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+            }
+            //filtrer by artist
+            if (!string.IsNullOrWhiteSpace(artist))
+            {
+                result = result.Where(c => c.Artist.Contains(artist, StringComparison.OrdinalIgnoreCase));
+            }
+            return result.ToList();
         }
     }
 }
