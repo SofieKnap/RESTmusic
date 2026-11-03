@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RESTmusic.Models;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace RESTmusic.Controllers
 {
@@ -9,53 +8,99 @@ namespace RESTmusic.Controllers
     [ApiController]
     public class CollectionController : ControllerBase
     {
+        private readonly ICollectionRepository repo;
 
-        private ICollectionRepository repo;
         public CollectionController(ICollectionRepository repo)
         {
             this.repo = repo;
         }
 
+        // GET api/Collection?title=low&artist=niki
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<Collection>> GetAllCollections(
-                [FromQuery] string? title = null, [FromQuery] string? artist = null)
+            [FromQuery] string? title = null, [FromQuery] string? artist = null)
         {
             return Ok(repo.GetAllCollections(title, artist));
         }
 
-
-
-        // GET: api/<CollectionController>
-       /* [HttpGet]
-        public IEnumerable<string> Get()
+        // GET api/Collection/lowkey/NIKI
+        [HttpGet("{title}/{artist}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<Collection> GetCollection(string title, string artist)
         {
-            return new string[] { "value1", "value2" };
-        }*/
-
-        // GET api/<CollectionController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
+            Collection? collection = repo.GetCollection(title, artist);
+            if (collection == null)
+            {
+                return NotFound();
+            }
+            return Ok(collection);
         }
 
-        // POST api/<CollectionController>
+        // POST api/Collection med et musiknummer som JSON i request body.
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public ActionResult<Collection> Post([FromBody] Collection collection)
         {
+            if (repo.GetCollection(collection.Title, collection.Artist) != null)
+            {
+                return Conflict("Et nummer med den titel og kunstner findes allerede.");
+            }
+
+            Collection createdCollection = repo.AddCollection(collection);
+            // Location-headeren peger på GET-adressen til det nye nummer.
+            return CreatedAtAction(nameof(GetCollection),
+                new { title = createdCollection.Title, artist = createdCollection.Artist },
+                createdCollection);
         }
 
-        // PUT api/<CollectionController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        // PUT api/Collection/lowkey/NIKI med alle de nye oplysninger som JSON.
+        [HttpPut("{title}/{artist}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public ActionResult<Collection> Put(string title, string artist, [FromBody] Collection updatedCollection)
         {
+            Collection? collection = repo.GetCollection(title, artist);
+            if (collection == null)
+            {
+                return NotFound();
+            }
+
+            // En ændring af titel/kunstner må ikke overskrive et andet nummers nøgle.
+            Collection? duplicate = repo.GetCollection(updatedCollection.Title, updatedCollection.Artist);
+            if (duplicate != null && duplicate != collection)
+            {
+                return Conflict("Et nummer med den titel og kunstner findes allerede.");
+            }
+
+            Collection? result = repo.UpdateCollection(title, artist, updatedCollection);
+            if (result == null)
+            {
+                return NotFound();
+            }
+            return Ok(result);
         }
 
-        // DELETE api/<CollectionController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        // DELETE api/Collection/lowkey/NIKI. Kræver et login med rollen Admin.
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{title}/{artist}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<Collection> Delete(string title, string artist)
         {
+            Collection? deletedCollection = repo.DeleteCollection(title, artist);
+            if (deletedCollection == null)
+            {
+                return NotFound();
+            }
+            return Ok(deletedCollection);
         }
     }
 }
