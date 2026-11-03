@@ -27,11 +27,11 @@ namespace RESTmusic.Controllers
 
 
         // GET: api/<CollectionController>
-        [HttpGet]
+       /* [HttpGet]
         public IEnumerable<string> Get()
         {
             return new string[] { "value1", "value2" };
-        }
+        }*/
 
         // GET api/<CollectionController>/5
         [HttpGet("{id}")]

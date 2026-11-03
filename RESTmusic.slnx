@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="RESTmusic/RESTmusic.csproj" />
+  <Project Path="xUnitTest/RepositoryTest.csproj" Id="e7d8ee62-a80b-4443-83d5-d8c9596944cc" />
 </Solution>
