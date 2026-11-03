@@ -15,7 +15,8 @@ namespace xUnitTest
             var collections = repo.GetAllCollections();
 
             // Assert
-            Assert.NotNull(collections);
+            Assert.NotEmpty(collections);
+            Assert.Contains(collections, album => album.Title == "lowkey" && album.Artist == "NIKI");
         }
     }
 }

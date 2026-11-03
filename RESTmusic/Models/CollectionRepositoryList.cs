@@ -22,7 +22,6 @@
         {
             IEnumerable<Collection> result = _collections;
             //filtrer by title 
-            var collections = _collections.AsEnumerable();
             if (!string.IsNullOrWhiteSpace(title))
             {
                 result = result.Where(c => c.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
@@ -33,6 +32,34 @@
                 result = result.Where(c => c.Artist.Contains(artist, StringComparison.OrdinalIgnoreCase));
             }
             return result.ToList();
+        }
+
+        public Collection? GetCollection(string title, string artist)
+        {
+            return _collections.FirstOrDefault(c => c.Title == title && c.Artist == artist);
+        }
+
+        public Collection? DeleteCollection(string title, string artist)
+        {
+            var collection = GetCollection(title, artist);
+            if (collection != null)
+            {
+                _collections.Remove(collection);
+            }
+            return collection;
+        }
+
+        public Collection? UpdateCollection(string title, string artist, Collection updatedCollection)
+        {
+            var collection = GetCollection(title, artist);
+            if (collection != null)
+            {
+                collection.Title = updatedCollection.Title;
+                collection.Artist = updatedCollection.Artist;
+                collection.Duration = updatedCollection.Duration;
+                collection.PublicationYear = updatedCollection.PublicationYear;
+            }
+            return collection;
         }
     }
 }
