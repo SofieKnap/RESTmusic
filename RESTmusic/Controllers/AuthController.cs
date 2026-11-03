@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -19,6 +19,7 @@ namespace RESTmusic.Controllers
             _config = config;
         }
 
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest login)
         {
@@ -52,7 +53,7 @@ namespace RESTmusic.Controllers
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(2), // Token is valid for 2 hours
+                expires: DateTime.UtcNow.AddHours(2), // Token is valid for 2 hours
                 signingCredentials: creds
             );
 

@@ -1,6 +1,6 @@
 # Backendtests
 
-Projektet har 46 xUnit-testkørsler fordelt på controller, repository, modelvalidering, login og de øvrige modeller.
+Projektet har 60 testkørsler (unittests og HTTP-integrationstests) fordelt på controller, repository, modelvalidering, login og de øvrige modeller.
 
 ## Kør i Visual Studio
 
@@ -25,7 +25,7 @@ Der kræves ingen browser, database eller Azure-forbindelse. Hver test opretter 
 - `ModelTests`: musikkens tekstvisning og standardeksemplet WeatherForecast.
 - `UnitTest1`: kontrol af, at startdata indeholder musik.
 
-Login-testene giver controlleren en konfiguration med en nøgle, der kun bruges til tests. De opsætter ikke login i den rigtige app. `Program.cs` mangler fortsat JWT-authentication og appens JWT-indstillinger, så Admin-beskyttet DELETE er ikke verificeret gennem HTTP-pipelinen. Controllerens DELETE-logik er testet direkte.
+Login-unittestene bruger en testnøgle. `JwtIntegrationTests` starter den rigtige app i en isoleret testserver og kontrollerer også JWT-validering, Admin-rollen, CORS og POST/PUT/DELETE gennem HTTP-pipelinen. Se JWT-SETUP.md i repositoryets rodmappe for den nødvendige Azure-indstilling Jwt__Key.
 
 `CollectionRepositoryDB` er en tom klasse og har endnu ingen databasefunktioner at teste.
 

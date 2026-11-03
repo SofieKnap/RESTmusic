@@ -39,6 +39,7 @@ namespace RESTmusic.Controllers
         }
 
         // POST api/Collection med et musiknummer som JSON i request body.
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,6 +59,7 @@ namespace RESTmusic.Controllers
         }
 
         // PUT api/Collection/lowkey/NIKI med alle de nye oplysninger som JSON.
+        [Authorize(Roles = "Admin")]
         [HttpPut("{title}/{artist}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
