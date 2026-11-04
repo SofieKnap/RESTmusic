@@ -23,11 +23,13 @@ jobs:
         with:
           dotnet-version: '10.x'
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Test backend
+        run: dotnet test xUnitTest/RepositoryTest.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        # Medtag .NET, så publiceringen ikke kræver samme runtime-version på Azure.
+        # Kun webprojektet skal i pakken; testprojektet skal ikke publiceres.
+        run: dotnet publish RESTmusic/RESTmusic.csproj -c Release --runtime win-x64 --self-contained true -p:AspNetCoreHostingModel=OutOfProcess -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -62,4 +64,23 @@ jobs:
           app-name: 'RESTmusicProject'
           slot-name: 'Production'
           package: .
+
+      - name: Check deployed API
+        shell: pwsh
+        run: |
+          $api = 'https://restmusicproject-g5aee9cthpghdcd9.swedencentral-01.azurewebsites.net/api/Collection'
+          for ($attempt = 1; $attempt -le 12; $attempt++) {
+            try {
+              $response = Invoke-WebRequest $api -TimeoutSec 20
+              if ($response.StatusCode -eq 200) {
+                $null = $response.Content | ConvertFrom-Json
+                Write-Output 'Deployed API responds with JSON.'
+                exit 0
+              }
+            } catch {
+              Write-Output "API not ready (attempt $attempt of 12)."
+            }
+            Start-Sleep -Seconds 10
+          }
+          throw 'The deployed API did not become available.'
           
