@@ -23,7 +23,7 @@ POST, PUT og DELETE kræver fortsat et Admin-token. Søgning sker stadig med `?t
 
 Id'er er unikke i den aktuelle samling. Listen ligger i hukommelsen, så både indhold og tæller bliver nulstillet, når appen genstarter. En database gemmer data og id'er mellem genstarter.
 
-Der er endnu ikke valgt en rigtig databaseudbyder eller forbindelse til appen. Program.cs bruger fortsat liste-repositoryet. Database-repositoryets id-adfærd er testet med SQLite i hukommelsen; det forbinder ikke appen til en database i Azure.
+SQL Server/Azure SQL kan vælges med `Repository:Type = Database` og forbindelsen `MusicDatabase`. Standardvalget er fortsat `List`. Migrationen og SQL-scriptet opretter tabellen, men der er ikke automatisk oprettet eller tilsluttet en database i Azure. Se [databaseopsætningen](DATABASE-SETUP.md). Database-repositoryets id-adfærd er også testet med SQLite i hukommelsen.
 
 ## Publicering
 

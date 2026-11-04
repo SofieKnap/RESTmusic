@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using RESTmusic.Models;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -9,7 +10,27 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddSingleton<ICollectionRepository, CollectionRepositoryList>();
+// Skift Repository:Type mellem List og Database i indstillingerne.
+string repositoryType = builder.Configuration["Repository:Type"] ?? "List";
+if (repositoryType.Equals("Database", StringComparison.OrdinalIgnoreCase))
+{
+    string connectionString = builder.Configuration.GetConnectionString("MusicDatabase")
+        ?? throw new InvalidOperationException("Database kræver en forbindelse med navnet MusicDatabase.");
+    if (string.IsNullOrWhiteSpace(connectionString))
+        throw new InvalidOperationException("MusicDatabase-forbindelsen må ikke være tom.");
+
+    builder.Services.AddDbContext<CollectionDbContext>(options =>
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+    builder.Services.AddScoped<ICollectionRepository, CollectionRepositoryDB>();
+}
+else if (repositoryType.Equals("List", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<ICollectionRepository, CollectionRepositoryList>();
+}
+else
+{
+    throw new InvalidOperationException("Repository:Type skal være List eller Database.");
+}
 
 // Samme nøgle, udsteder og modtager bruges til både login og validering.
 string? jwtKey = builder.Configuration["Jwt:Key"];
