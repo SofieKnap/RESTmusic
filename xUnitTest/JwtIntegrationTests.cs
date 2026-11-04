@@ -86,11 +86,11 @@ namespace xUnitTest
             using var client = OpretClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", OpretToken("Admin", fejl));
 
-            var response = await client.DeleteAsync("/api/Collection/lowkey/NIKI");
+            var response = await client.DeleteAsync("/api/Collection/1");
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             // Et afvist kald må ikke have slettet nummeret.
-            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/Collection/lowkey/NIKI")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/Collection/1")).StatusCode);
         }
 
         [Fact]
@@ -112,14 +112,20 @@ namespace xUnitTest
             string originalUrl = created.Headers.Location!.ToString();
             Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(originalUrl)).StatusCode);
 
-            // Opdater også nøglen, og hent nummeret på den nye adresse.
+            var saved = await created.Content.ReadFromJsonAsync<Collection>();
+            Assert.True(saved!.Id > 0);
+            Assert.EndsWith("/" + saved.Id, originalUrl);
+
+            // En titelændring beholder både id og adresse. Body-id må ikke ændre nøglen.
+            album.Id = 999999;
             album.Title += "-opdateret";
             album.Duration = 210;
             Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync(originalUrl, album)).StatusCode);
-            string updatedUrl = "/api/Collection/" + Uri.EscapeDataString(album.Title) + "/" + Uri.EscapeDataString(album.Artist);
+            string updatedUrl = originalUrl;
             var updated = await client.GetFromJsonAsync<Collection>(updatedUrl);
             Assert.Equal(210, updated!.Duration);
-            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync(originalUrl)).StatusCode);
+            Assert.Equal(saved.Id, updated.Id);
+            Assert.Equal(album.Title, updated.Title);
 
             // Slet kun det nummer, som testen selv oprettede.
             Assert.Equal(HttpStatusCode.OK, (await client.DeleteAsync(updatedUrl)).StatusCode);
@@ -131,7 +137,7 @@ namespace xUnitTest
         {
             using var client = OpretClient();
             const string origin = "https://frontmusiccollection-fwa7eybkd0f3hzg6.swedencentral-01.azurewebsites.net";
-            using var request = new HttpRequestMessage(HttpMethod.Options, "/api/Collection/lowkey/NIKI");
+            using var request = new HttpRequestMessage(HttpMethod.Options, "/api/Collection/1");
             request.Headers.Add("Origin", origin);
             request.Headers.Add("Access-Control-Request-Method", "DELETE");
             request.Headers.Add("Access-Control-Request-Headers", "authorization,content-type");
@@ -154,7 +160,7 @@ namespace xUnitTest
 
         private static HttpRequestMessage OpretAendring(string method)
         {
-            string url = method == "POST" ? "/api/Collection" : "/api/Collection/lowkey/NIKI";
+            string url = method == "POST" ? "/api/Collection" : "/api/Collection/1";
             var request = new HttpRequestMessage(new HttpMethod(method), url);
             if (method != "DELETE")
             {

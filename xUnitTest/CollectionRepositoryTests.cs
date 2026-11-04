@@ -5,6 +5,7 @@ namespace xUnitTest
 {
     public class CollectionRepositoryTests
     {
+        // theory bruges når samme test køres med flere sæt testdata.
         [Theory]
         [InlineData("LOW", null)]
         [InlineData(null, "niki")]
@@ -68,7 +69,8 @@ namespace xUnitTest
             // Assert
             Assert.Equal(antalFoer + 1, repo.GetAllCollections().Count());
             Assert.Equal(album.Title, result.Title);
-            Assert.Same(album, repo.GetCollection("Testnummer", "Testkunstner"));
+            Assert.True(result.Id > 0);
+            Assert.Same(result, repo.GetCollection(result.Id));
         }
 
         [Fact]
@@ -77,28 +79,29 @@ namespace xUnitTest
             // Arrange
             var repo = new CollectionRepositoryList();
             var andetNummer = new Collection { Title = "lowkey", Artist = "Anden kunstner", Duration = 200, PublicationYear = 2026 };
-            repo.AddCollection(andetNummer);
+            var created = repo.AddCollection(andetNummer);
 
             // Act
-            var result = repo.GetCollection("lowkey", "Anden kunstner");
+            var result = repo.GetCollection(created.Id);
 
             // Assert
-            Assert.Same(andetNummer, result);
-            Assert.Equal("NIKI", repo.GetCollection("lowkey", "NIKI")!.Artist);
+            Assert.Same(created, result);
+            Assert.Equal("NIKI", repo.GetAllCollections("lowkey", "NIKI").Single().Artist);
         }
 
         [Theory]
-        [InlineData("low", "NIKI")]
-        [InlineData("lowkey", "Forkert kunstner")]
-        public void GetCollection_ReturnererNullUdenPraecistMatch(string title, string artist)
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue)]
+        public void GetCollection_ReturnererNullForUkendtId(int id)
         {
             // Arrange
             var repo = new CollectionRepositoryList();
 
             // Act
-            var result = repo.GetCollection(title, artist);
+            var result = repo.GetCollection(id);
 
-            // Assert: Opslag af ét nummer kræver hele titlen og den rigtige kunstner.
+            // Assert
             Assert.Null(result);
         }
 
@@ -108,17 +111,18 @@ namespace xUnitTest
             // Arrange
             var repo = new CollectionRepositoryList();
             var andetNummer = new Collection { Title = "lowkey", Artist = "Anden kunstner", Duration = 200, PublicationYear = 2026 };
-            repo.AddCollection(andetNummer);
+            var created = repo.AddCollection(andetNummer);
             int antalFoer = repo.GetAllCollections().Count();
 
             // Act
-            var result = repo.DeleteCollection("lowkey", "NIKI");
+            int id = repo.GetAllCollections("lowkey", "NIKI").Single().Id;
+            var result = repo.DeleteCollection(id);
 
             // Assert
             Assert.NotNull(result);
             Assert.Equal("NIKI", result.Artist);
-            Assert.Null(repo.GetCollection("lowkey", "NIKI"));
-            Assert.Same(andetNummer, repo.GetCollection("lowkey", "Anden kunstner"));
+            Assert.Null(repo.GetCollection(id));
+            Assert.Same(created, repo.GetCollection(created.Id));
             Assert.Equal(antalFoer - 1, repo.GetAllCollections().Count());
         }
 
@@ -130,7 +134,7 @@ namespace xUnitTest
             var numreFoer = repo.GetAllCollections().ToList();
 
             // Act
-            var result = repo.DeleteCollection("Findes ikke", "Ingen");
+            var result = repo.DeleteCollection(int.MaxValue);
 
             // Assert
             Assert.Null(result);
@@ -146,7 +150,8 @@ namespace xUnitTest
             var updated = new Collection { Title = "Ny titel", Artist = "Ny kunstner", Duration = 240, PublicationYear = 2026 };
 
             // Act
-            var result = repo.UpdateCollection("lowkey", "NIKI", updated);
+            int id = repo.GetAllCollections("lowkey", "NIKI").Single().Id;
+            var result = repo.UpdateCollection(id, updated);
 
             // Assert
             Assert.NotNull(result);
@@ -154,9 +159,9 @@ namespace xUnitTest
             Assert.Equal("Ny kunstner", result.Artist);
             Assert.Equal(240, result.Duration);
             Assert.Equal(2026, result.PublicationYear);
-            Assert.Null(repo.GetCollection("lowkey", "NIKI"));
-            Assert.Same(result, repo.GetCollection("Ny titel", "Ny kunstner"));
-            Assert.Equal(192, repo.GetCollection("Gabriela", "KATSEYE")!.Duration);
+            Assert.Equal(id, result.Id);
+            Assert.Same(result, repo.GetCollection(id));
+            Assert.Equal(192, repo.GetAllCollections("Gabriela", "KATSEYE").Single().Duration);
             Assert.Equal(antalFoer, repo.GetAllCollections().Count());
         }
 
@@ -169,13 +174,13 @@ namespace xUnitTest
             var updated = new Collection { Title = "Ny titel", Artist = "Ny kunstner", Duration = 240, PublicationYear = 2026 };
 
             // Act
-            var result = repo.UpdateCollection("Findes ikke", "Ingen", updated);
+            var result = repo.UpdateCollection(int.MaxValue, updated);
 
             // Assert
             Assert.Null(result);
-            Assert.Null(repo.GetCollection("Ny titel", "Ny kunstner"));
+            Assert.Empty(repo.GetAllCollections("Ny titel", "Ny kunstner"));
             Assert.Equal(antalFoer, repo.GetAllCollections().Count());
-            Assert.Equal(185, repo.GetCollection("lowkey", "NIKI")!.Duration);
+            Assert.Equal(185, repo.GetAllCollections("lowkey", "NIKI").Single().Duration);
         }
     }
 }

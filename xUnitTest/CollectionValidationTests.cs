@@ -7,7 +7,8 @@ namespace xUnitTest
     public class CollectionValidationTests
     {
         // [ApiController] bruger disse valideringsregler før POST og PUT køres.
-        // Her tester vi reglerne direkte, uden en webserver.
+        // Her tester vi reglerne direkte, uden en webserver         // theory bruges når samme test køres med flere sæt testdata.
+
         [Theory]
         [InlineData(null, "Kunstner", 180, 2026, "Title")]
         [InlineData("", "Kunstner", 180, 2026, "Title")]

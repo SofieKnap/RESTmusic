@@ -15,6 +15,7 @@ namespace xUnitTest
         // Denne nøgle bruges kun i testene, aldrig i den publicerede app.
         private const string TestKey = "Kun-til-tests-ikke-en-produktionsnoegle-1234567890";
 
+        // theory bruges når samme test køres med flere sæt testdata.
         [Theory]
         [InlineData("admin", "forkert")]
         [InlineData("forkert", "1234")]
