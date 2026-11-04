@@ -26,7 +26,7 @@ namespace xUnitTest
         {
             var controller = new CollectionController(new CollectionRepositoryList());
 
-            var response = controller.GetCollection("lowkey", "NIKI");
+            var response = controller.GetCollection(1);
 
             var ok = Assert.IsType<OkObjectResult>(response.Result);
             var album = Assert.IsType<Collection>(ok.Value);
@@ -35,11 +35,11 @@ namespace xUnitTest
         }
 
         [Fact]
-        public void GetCollection_Returnerer404NaarKunEnDelAfTitlenMatcher()
+        public void GetCollection_Returnerer404ForUkendtId()
         {
             var controller = new CollectionController(new CollectionRepositoryList());
 
-            var response = controller.GetCollection("low", "NIKI");
+            var response = controller.GetCollection(int.MaxValue);
 
             Assert.IsType<NotFoundResult>(response.Result);
         }
@@ -56,10 +56,11 @@ namespace xUnitTest
             var created = Assert.IsType<CreatedAtActionResult>(response.Result);
             Assert.Equal(201, created.StatusCode);
             Assert.Equal(nameof(CollectionController.GetCollection), created.ActionName);
-            Assert.Equal(album.Title, created.RouteValues!["title"]);
-            Assert.Equal(album.Artist, created.RouteValues["artist"]);
-            Assert.Same(album, created.Value);
-            Assert.Same(album, repo.GetCollection(album.Title, album.Artist));
+            var saved = Assert.IsType<Collection>(created.Value);
+            Assert.True(saved.Id > 0);
+            Assert.Equal(saved.Id, created.RouteValues!["id"]);
+            Assert.Equal(album.Title, saved.Title);
+            Assert.Same(saved, repo.GetCollection(saved.Id));
         }
 
         [Fact]
@@ -77,13 +78,13 @@ namespace xUnitTest
         }
 
         [Fact]
-        public void Put_OpdatererAlleOplysningerOgSkifterNoeglen()
+        public void Put_OpdatererAlleOplysningerOgBevarerId()
         {
             var repo = new CollectionRepositoryList();
             var controller = new CollectionController(repo);
             var updated = new Collection { Title = "Ny titel", Artist = "Ny kunstner", Duration = 200, PublicationYear = 2026 };
 
-            var response = controller.Put("lowkey", "NIKI", updated);
+            var response = controller.Put(1, updated);
 
             var ok = Assert.IsType<OkObjectResult>(response.Result);
             var album = Assert.IsType<Collection>(ok.Value);
@@ -91,8 +92,8 @@ namespace xUnitTest
             Assert.Equal(updated.Artist, album.Artist);
             Assert.Equal(updated.Duration, album.Duration);
             Assert.Equal(updated.PublicationYear, album.PublicationYear);
-            Assert.Null(repo.GetCollection("lowkey", "NIKI"));
-            Assert.Same(album, repo.GetCollection(updated.Title, updated.Artist));
+            Assert.Equal(1, album.Id);
+            Assert.Same(album, repo.GetCollection(1));
         }
 
         [Fact]
@@ -101,7 +102,7 @@ namespace xUnitTest
             var controller = new CollectionController(new CollectionRepositoryList());
             var updated = new Collection { Title = "lowkey", Artist = "NIKI", Duration = 200, PublicationYear = 2019 };
 
-            var response = controller.Put("lowkey", "NIKI", updated);
+            var response = controller.Put(1, updated);
 
             var ok = Assert.IsType<OkObjectResult>(response.Result);
             Assert.Equal(200, Assert.IsType<Collection>(ok.Value).Duration);
@@ -113,7 +114,7 @@ namespace xUnitTest
             var controller = new CollectionController(new CollectionRepositoryList());
             var updated = new Collection { Title = "Ny titel", Artist = "Ny kunstner", Duration = 200, PublicationYear = 2026 };
 
-            var response = controller.Put("Findes ikke", "Ingen", updated);
+            var response = controller.Put(int.MaxValue, updated);
 
             Assert.IsType<NotFoundResult>(response.Result);
         }
@@ -125,11 +126,11 @@ namespace xUnitTest
             var controller = new CollectionController(repo);
             var updated = new Collection { Title = "Gabriela", Artist = "KATSEYE", Duration = 1, PublicationYear = 2026 };
 
-            var response = controller.Put("lowkey", "NIKI", updated);
+            var response = controller.Put(1, updated);
 
             Assert.IsType<ConflictObjectResult>(response.Result);
-            Assert.Equal(185, repo.GetCollection("lowkey", "NIKI")!.Duration);
-            Assert.Equal(192, repo.GetCollection("Gabriela", "KATSEYE")!.Duration);
+            Assert.Equal(185, repo.GetCollection(1)!.Duration);
+            Assert.Equal(192, repo.GetCollection(3)!.Duration);
         }
 
         // Disse tests kalder metoden direkte. Login og Admin-rollen håndhæves af HTTP-pipelinen.
@@ -140,11 +141,11 @@ namespace xUnitTest
             var controller = new CollectionController(repo);
             int countBefore = repo.GetAllCollections().Count();
 
-            var response = controller.Delete("lowkey", "NIKI");
+            var response = controller.Delete(1);
 
             var ok = Assert.IsType<OkObjectResult>(response.Result);
             Assert.Equal("lowkey", Assert.IsType<Collection>(ok.Value).Title);
-            Assert.Null(repo.GetCollection("lowkey", "NIKI"));
+            Assert.Null(repo.GetCollection(1));
             Assert.Equal(countBefore - 1, repo.GetAllCollections().Count());
         }
 
@@ -153,7 +154,7 @@ namespace xUnitTest
         {
             var controller = new CollectionController(new CollectionRepositoryList());
 
-            var response = controller.Delete("Findes ikke", "Ingen");
+            var response = controller.Delete(int.MaxValue);
 
             Assert.IsType<NotFoundResult>(response.Result);
         }

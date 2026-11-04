@@ -24,13 +24,13 @@ namespace RESTmusic.Controllers
             return Ok(repo.GetAllCollections(title, artist));
         }
 
-        // GET api/Collection/lowkey/NIKI
-        [HttpGet("{title}/{artist}")]
+        // GET api/Collection/1
+        [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Collection> GetCollection(string title, string artist)
+        public ActionResult<Collection> GetCollection(int id)
         {
-            Collection? collection = repo.GetCollection(title, artist);
+            Collection? collection = repo.GetCollection(id);
             if (collection == null)
             {
                 return NotFound();
@@ -46,7 +46,8 @@ namespace RESTmusic.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public ActionResult<Collection> Post([FromBody] Collection collection)
         {
-            if (repo.GetCollection(collection.Title, collection.Artist) != null)
+            if (repo.GetAllCollections(collection.Title, collection.Artist)
+                .Any(c => c.Title == collection.Title && c.Artist == collection.Artist))
             {
                 return Conflict("Et nummer med den titel og kunstner findes allerede.");
             }
@@ -54,33 +55,34 @@ namespace RESTmusic.Controllers
             Collection createdCollection = repo.AddCollection(collection);
             // Location-headeren peger på GET-adressen til det nye nummer.
             return CreatedAtAction(nameof(GetCollection),
-                new { title = createdCollection.Title, artist = createdCollection.Artist },
+                new { id = createdCollection.Id },
                 createdCollection);
         }
 
-        // PUT api/Collection/lowkey/NIKI med alle de nye oplysninger som JSON.
+        // PUT api/Collection/1 med alle de nye oplysninger som JSON.
         [Authorize(Roles = "Admin")]
-        [HttpPut("{title}/{artist}")]
+        [HttpPut("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public ActionResult<Collection> Put(string title, string artist, [FromBody] Collection updatedCollection)
+        public ActionResult<Collection> Put(int id, [FromBody] Collection updatedCollection)
         {
-            Collection? collection = repo.GetCollection(title, artist);
+            Collection? collection = repo.GetCollection(id);
             if (collection == null)
             {
                 return NotFound();
             }
 
-            // En ændring af titel/kunstner må ikke overskrive et andet nummers nøgle.
-            Collection? duplicate = repo.GetCollection(updatedCollection.Title, updatedCollection.Artist);
-            if (duplicate != null && duplicate != collection)
+            // Titel og kunstner kan ændres. Id'et forbliver det samme.
+            bool duplicate = repo.GetAllCollections(updatedCollection.Title, updatedCollection.Artist)
+                .Any(c => c.Id != id && c.Title == updatedCollection.Title && c.Artist == updatedCollection.Artist);
+            if (duplicate)
             {
                 return Conflict("Et nummer med den titel og kunstner findes allerede.");
             }
 
-            Collection? result = repo.UpdateCollection(title, artist, updatedCollection);
+            Collection? result = repo.UpdateCollection(id, updatedCollection);
             if (result == null)
             {
                 return NotFound();
@@ -88,16 +90,16 @@ namespace RESTmusic.Controllers
             return Ok(result);
         }
 
-        // DELETE api/Collection/lowkey/NIKI. Kræver et login med rollen Admin.
+        // DELETE api/Collection/1. Kræver et login med rollen Admin.
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{title}/{artist}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Collection> Delete(string title, string artist)
+        public ActionResult<Collection> Delete(int id)
         {
-            Collection? deletedCollection = repo.DeleteCollection(title, artist);
+            Collection? deletedCollection = repo.DeleteCollection(id);
             if (deletedCollection == null)
             {
                 return NotFound();

@@ -1,8 +1,10 @@
-﻿namespace RESTmusic.Models
+namespace RESTmusic.Models
 {
     public class CollectionRepositoryList : ICollectionRepository
     {
         private readonly List<Collection> _collections = new List<Collection>();
+        private readonly object _lock = new object();
+        private int _nextId = 1;
         
         public CollectionRepositoryList()
         {
@@ -14,13 +16,30 @@
 
         public Collection AddCollection(Collection collection)
         {
-            _collections.Add(collection);
-            return collection;
+            // Låsen sikrer unikke id'er, også ved samtidige HTTP-kald.
+            lock (_lock)
+            {
+                var created = new Collection
+                {
+                    Id = _nextId++,
+                    Title = collection.Title,
+                    Artist = collection.Artist,
+                    Duration = collection.Duration,
+                    PublicationYear = collection.PublicationYear
+                };
+                _collections.Add(created);
+                return created;
+            }
         }
 
         public IEnumerable<Collection> GetAllCollections(string? title = null, string? artist = null)
         {
-            IEnumerable<Collection> result = _collections;
+            // Tag et øjebliksbillede, så listen kan læses under andre kald.
+            IEnumerable<Collection> result;
+            lock (_lock)
+            {
+                result = _collections.ToList();
+            }
             //filtrer by title 
             if (!string.IsNullOrWhiteSpace(title))
             {
@@ -34,32 +53,42 @@
             return result.ToList();
         }
 
-        public Collection? GetCollection(string title, string artist)
+        public Collection? GetCollection(int id)
         {
-            return _collections.FirstOrDefault(c => c.Title == title && c.Artist == artist);
+            lock (_lock)
+            {
+                return _collections.FirstOrDefault(c => c.Id == id);
+            }
         }
 
-        public Collection? DeleteCollection(string title, string artist)
+        public Collection? DeleteCollection(int id)
         {
-            var collection = GetCollection(title, artist);
-            if (collection != null)
+            lock (_lock)
             {
-                _collections.Remove(collection);
+                var collection = GetCollection(id);
+                if (collection != null)
+                {
+                    _collections.Remove(collection);
+                }
+                return collection;
             }
-            return collection;
         }
 
-        public Collection? UpdateCollection(string title, string artist, Collection updatedCollection)
+        public Collection? UpdateCollection(int id, Collection updatedCollection)
         {
-            var collection = GetCollection(title, artist);
-            if (collection != null)
+            lock (_lock)
             {
-                collection.Title = updatedCollection.Title;
-                collection.Artist = updatedCollection.Artist;
-                collection.Duration = updatedCollection.Duration;
-                collection.PublicationYear = updatedCollection.PublicationYear;
+                var collection = GetCollection(id);
+                if (collection != null)
+                {
+                    // Id'et beholdes, også hvis titel og kunstner ændres.
+                    collection.Title = updatedCollection.Title;
+                    collection.Artist = updatedCollection.Artist;
+                    collection.Duration = updatedCollection.Duration;
+                    collection.PublicationYear = updatedCollection.PublicationYear;
+                }
+                return collection;
             }
-            return collection;
         }
     }
 }

@@ -38,4 +38,4 @@ Issuer og Audience læses fra den publicerede appsettings.json. Hvis I selv sæt
 
 Kør `dotnet test xUnitTest/RepositoryTest.csproj`.
 
-Der er 60 testkørsler, inklusive HTTP-integrationstests af login, læsning uden login, 401/403, ugyldige tokens, oprettelse/opdatering/sletning med Admin-token samt CORS med Authorization-header. Integrationstestene bruger en isoleret server i hukommelsen og ændrer ingen data på Azure.
+Der er 76 testkørsler, inklusive HTTP-integrationstests af login, læsning uden login, 401/403, ugyldige tokens, oprettelse/opdatering/sletning med Admin-token samt CORS med Authorization-header. Integrationstestene bruger en isoleret server i hukommelsen og ændrer ingen data på Azure.

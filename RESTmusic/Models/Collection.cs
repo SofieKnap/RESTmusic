@@ -4,7 +4,9 @@ namespace RESTmusic.Models
 {
     public class Collection
     {
-       
+        // Entity Framework bruger automatisk Id som primærnøgle.
+        public int Id { get; set; }
+
         [Required]
         public string Title { get; set; } = string.Empty;
         [Required]
